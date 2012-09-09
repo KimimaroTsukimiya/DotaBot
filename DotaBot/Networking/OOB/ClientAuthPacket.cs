@@ -24,8 +24,8 @@ namespace DotaBot
 
         public bool IsLowViolence { get; set; }
 
-        public short TicketLength { get; set; }
         public byte[] Ticket { get; set; }
+
 
         public ClientAuthPacket()
         {
@@ -90,7 +90,13 @@ namespace DotaBot
                     Players.Add( Serializer.DeserializeWithLengthPrefix<CCLCMsg_SplitPlayerConnect>( stream, PrefixStyle.Base128 ) );
                 }
 
-                // todo: violence bit, auth ticket
+                using ( var bitReader = new BitReader( stream, true ) )
+                {
+                    IsLowViolence = bitReader.ReadOneBit();
+
+                    int ticketSize = bitReader.ReadSBitLong( 16 );
+                    Ticket = bitReader.ReadBytes( ticketSize );
+                }
             }
 
         }
