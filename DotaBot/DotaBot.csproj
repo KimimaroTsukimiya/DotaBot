@@ -66,6 +66,9 @@
     <Compile Include="Dota\DotaGCClient.cs" />
     <Compile Include="Dota\DotaMatchClient.cs" />
     <Compile Include="Dota\GCClient.cs" />
+    <Compile Include="Dota\Generated\DotaClientMessages.cs" />
+    <Compile Include="Dota\Generated\DotaCommonMessages.cs" />
+    <Compile Include="Dota\Generated\DotaNetMessages.cs" />
     <Compile Include="Networking\NetClient.cs" />
     <Compile Include="Networking\OOB\ClientAuthPacket.cs" />
     <Compile Include="Networking\OOB\ClientConnectPacket.cs" />

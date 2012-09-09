@@ -4,9 +4,11 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ProtoBuf;
 
 namespace DotaBot
 {
+
     class ClientAuthPacket : OutOfBandPacket
     {
         public int Protocol { get; set; }
@@ -18,6 +20,12 @@ namespace DotaBot
         public string Name { get; set; }
         public string Password { get; set; }
 
+        public List<CCLCMsg_SplitPlayerConnect> Players { get; private set; }
+
+        public bool IsLowViolence { get; set; }
+
+        public short TicketLength { get; set; }
+        public byte[] Ticket { get; set; }
 
         public ClientAuthPacket()
         {
@@ -25,6 +33,8 @@ namespace DotaBot
 
             Protocol = 40; // current dota protocol
             AuthProtocol = 3; // steam
+
+            Players = new List<CCLCMsg_SplitPlayerConnect>();
         }
 
 
@@ -42,6 +52,16 @@ namespace DotaBot
 
                 bw.WriteNullTermString( Name );
                 bw.WriteNullTermString( Password );
+
+                bw.Write( ( byte )Players.Count );
+
+                foreach ( var player in Players )
+                {
+                    bw.Write( ( byte )CLC_Messages.clc_SplitPlayerConnect );
+                    Serializer.SerializeWithLengthPrefix( stream, player, PrefixStyle.Base128 );
+                }
+
+                // todo: violence bit, auth ticket
             }
         }
 
@@ -59,7 +79,20 @@ namespace DotaBot
 
                 Name = br.ReadNullTermString();
                 Password = br.ReadNullTermString();
+
+                int numPlayers = br.ReadByte();
+
+                Players.Clear();
+
+                for ( int x = 0 ; x < numPlayers ; ++x )
+                {
+                    CLC_Messages msgType = ( CLC_Messages )br.ReadByte();
+                    Players.Add( Serializer.DeserializeWithLengthPrefix<CCLCMsg_SplitPlayerConnect>( stream, PrefixStyle.Base128 ) );
+                }
+
+                // todo: violence bit, auth ticket
             }
+
         }
     }
 }
