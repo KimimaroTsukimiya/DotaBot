@@ -1,91 +1,61 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Security;
 using System.Text;
 using System.Threading.Tasks;
 using SteamKit2;
+using SteamKit2.GC;
+using SteamKit2.GC.Dota;
+using SteamKit2.GC.Internal;
+using SteamKit2.Internal;
 
 namespace DotaBot
 {
-    class DotaGCClient
+    class DotaGCClient : GCClient
     {
-        SteamClient steamClient;
-
-        CallbackManager callbackMgr;
-
-        SteamUser steamUser;
-        SteamGameCoordinator gameCoordinator;
-
-        string user, pass;
-
-
         public DotaGCClient( string user, string pass )
+            : base( user, pass )
         {
-            this.user = user;
-            this.pass = pass;
-
-            steamClient = new SteamClient();
-
-            callbackMgr = new CallbackManager( steamClient );
-
-            steamUser = steamClient.GetHandler<SteamUser>();
-            gameCoordinator = steamClient.GetHandler<SteamGameCoordinator>();
-
-            new Callback<SteamClient.ConnectedCallback>( OnConnected, callbackMgr );
-            new Callback<SteamClient.DisconnectedCallback>( OnDisconnected, callbackMgr );
-
-            new Callback<SteamUser.LoggedOnCallback>( OnLoggedOn, callbackMgr );
-            new Callback<SteamUser.LoggedOffCallback>( OnLoggedOff, callbackMgr );
-
-            new Callback<SteamGameCoordinator.MessageCallback>( OnGCMessage, callbackMgr );
         }
 
 
-        public void Connect()
+        protected override void OnLoggedOn( SteamUser.LoggedOnCallback callback )
         {
-            steamClient.Connect();
-        }
+            base.OnLoggedOn( callback );
 
+            var playDota = new ClientMsgProtobuf<CMsgClientGamesPlayed>( EMsg.ClientGamesPlayedNoDataBlob );
 
-        public void RunCallbacks()
-        {
-            callbackMgr.RunWaitCallbacks( TimeSpan.FromMilliseconds( 10 ) );
-        }
-
-
-        void OnConnected( SteamClient.ConnectedCallback callback )
-        {
-            if ( callback.Result != EResult.OK )
+            playDota.Body.games_played.Add( new CMsgClientGamesPlayed.GamePlayed
             {
-                DebugLog.WriteLine( "DotaGCClient", "Unable to connect to steam: {0}", callback.Result );
-                return;
-            }
-
-            DebugLog.WriteLine( "DotaGCClient", "Connected to steam!" );
-
-            steamUser.LogOn( new SteamUser.LogOnDetails
-            {
-                Username = user,
-                Password = pass,
+                game_id = new GameID( 570 ),
             } );
-        }
-        void OnDisconnected( SteamClient.DisconnectedCallback callback )
-        {
-            DebugLog.WriteLine( "DotaGCClient", "Disconnected from steam!" );
+
+            SteamClient.Send( playDota );
         }
 
-        void OnLoggedOn( SteamUser.LoggedOnCallback callback )
+        protected override void OnGCMessage( SteamGameCoordinator.MessageCallback callback )
         {
-            DebugLog.WriteLine( "DotaGCClient", "Logged on: {0}/{1}", callback.Result, callback.ExtendedResult );
-        }
-        void OnLoggedOff( SteamUser.LoggedOffCallback callback )
-        {
-            DebugLog.WriteLine( "DotaGCClient", "Logged off of steam: {0}", callback.Result );
+            base.OnGCMessage( callback );
+
+            var dispatchMap = new Dictionary<uint, Action<IPacketGCMsg>>
+            {
+                { EGCMsg.ClientWelcome, OnClientWelcome },
+            };
+
+            Action<IPacketGCMsg> func;
+            if ( !dispatchMap.TryGetValue( callback.EMsg, out func ) )
+                return;
+
+            func( callback.Message );
         }
 
-        void OnGCMessage( SteamGameCoordinator.MessageCallback callback )
+        void OnClientWelcome( IPacketGCMsg msg )
         {
+            var clientWelcome = new ClientGCMsgProtobuf<CMsgClientWelcome>( msg );
+
+            DebugLog.WriteLine( "DotaGCClient", "ClientWelcome: {0}", clientWelcome.Body.version );
         }
     }
 }

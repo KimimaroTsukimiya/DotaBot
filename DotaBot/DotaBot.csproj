@@ -65,6 +65,7 @@
     <Compile Include="Dota\DotaClient.cs" />
     <Compile Include="Dota\DotaGCClient.cs" />
     <Compile Include="Dota\DotaMatchClient.cs" />
+    <Compile Include="Dota\GCClient.cs" />
     <Compile Include="Networking\NetClient.cs" />
     <Compile Include="Networking\OOB\ClientAuthPacket.cs" />
     <Compile Include="Networking\OOB\ClientConnectPacket.cs" />
@@ -78,6 +79,10 @@
     <Compile Include="Utils.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\SteamRE\Resources\protobuf-net\protobuf-net\protobuf-net.csproj">
+      <Project>{8374e4d7-2a91-48f1-9360-09b09cf27c3f}</Project>
+      <Name>protobuf-net</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\SteamRE\SteamKit2\SteamKit2\SteamKit2.csproj">
       <Project>{beb5bf07-bb56-402a-97a3-a41c6444c6a5}</Project>
       <Name>SteamKit2</Name>
