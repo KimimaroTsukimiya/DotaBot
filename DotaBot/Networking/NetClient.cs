@@ -9,16 +9,17 @@ using System.Threading.Tasks;
 
 namespace DotaBot
 {
-    class DotaClient
+    class NetClient
     {
         UdpClient socket;
 
 
-        public DotaClient( IPEndPoint endPoint )
+        public NetClient( IPEndPoint endPoint )
         {
             socket = new UdpClient();
             socket.Connect( endPoint );
         }
+
 
         public void Send( Packet packet )
         {
@@ -33,11 +34,13 @@ namespace DotaBot
 
         public Packet Receive()
         {
+            if ( socket.Available == 0 )
+                return null; // no packet yet
+
             IPEndPoint remoteEp = null;
             byte[] data = socket.Receive( ref remoteEp );
 
             return PacketFactory.GetPacket( data );
         }
-
     }
 }

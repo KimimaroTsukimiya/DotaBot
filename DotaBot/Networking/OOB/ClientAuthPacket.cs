@@ -18,12 +18,13 @@ namespace DotaBot
         public string Name { get; set; }
         public string Password { get; set; }
 
-        public short KeyLen { get; set; }
-
 
         public ClientAuthPacket()
         {
             Type = OutOfBandPacketType.ClientAuth;
+
+            Protocol = 40; // current dota protocol
+            AuthProtocol = 3; // steam
         }
 
 
@@ -41,8 +42,6 @@ namespace DotaBot
 
                 bw.WriteNullTermString( Name );
                 bw.WriteNullTermString( Password );
-
-                bw.Write( KeyLen );
             }
         }
 

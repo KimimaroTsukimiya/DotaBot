@@ -28,6 +28,8 @@ namespace DotaBot
         public ServerChallengePacket()
         {
             Type = OutOfBandPacketType.ServerChallenge;
+
+            AuthProtocol = 3; // steam
         }
 
 

@@ -62,7 +62,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DotaClient.cs" />
+    <Compile Include="Dota\DotaClient.cs" />
+    <Compile Include="Dota\DotaGCClient.cs" />
+    <Compile Include="Networking\NetClient.cs" />
     <Compile Include="Networking\OOB\ClientAuthPacket.cs" />
     <Compile Include="Networking\OOB\ClientConnectPacket.cs" />
     <Compile Include="Networking\OOB\ServerChallengePacket.cs" />
