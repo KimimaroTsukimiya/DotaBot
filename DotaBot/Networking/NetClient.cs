@@ -14,12 +14,16 @@ namespace DotaBot
         UdpClient socket;
 
 
-        public NetClient( IPEndPoint endPoint )
+        public NetClient()
         {
             socket = new UdpClient();
-            socket.Connect( endPoint );
         }
 
+
+        public void Connect( IPEndPoint endPoint )
+        {
+            socket.Connect( endPoint );
+        }
 
         public void Send( Packet packet )
         {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security;
 using System.Text;
 using System.Threading.Tasks;
 using SteamKit2;
@@ -16,9 +17,14 @@ namespace DotaBot
         SteamUser steamUser;
         SteamGameCoordinator gameCoordinator;
 
+        string user, pass;
 
-        public DotaGCClient()
+
+        public DotaGCClient( string user, string pass )
         {
+            this.user = user;
+            this.pass = pass;
+
             steamClient = new SteamClient();
 
             callbackMgr = new CallbackManager( steamClient );
@@ -44,7 +50,7 @@ namespace DotaBot
 
         public void RunCallbacks()
         {
-            callbackMgr.RunWaitCallbacks( TimeSpan.FromSeconds( 1 ) );
+            callbackMgr.RunWaitCallbacks( TimeSpan.FromMilliseconds( 10 ) );
         }
 
 
@@ -52,11 +58,17 @@ namespace DotaBot
         {
             if ( callback.Result != EResult.OK )
             {
-                DebugLog.WriteLine( "DotaGCClient", "Unable to connect: {0}", callback.Result );
+                DebugLog.WriteLine( "DotaGCClient", "Unable to connect to steam: {0}", callback.Result );
                 return;
             }
 
-            // todo: logon
+            DebugLog.WriteLine( "DotaGCClient", "Connected to steam!" );
+
+            steamUser.LogOn( new SteamUser.LogOnDetails
+            {
+                Username = user,
+                Password = pass,
+            } );
         }
         void OnDisconnected( SteamClient.DisconnectedCallback callback )
         {
@@ -65,6 +77,7 @@ namespace DotaBot
 
         void OnLoggedOn( SteamUser.LoggedOnCallback callback )
         {
+            DebugLog.WriteLine( "DotaGCClient", "Logged on: {0}/{1}", callback.Result, callback.ExtendedResult );
         }
         void OnLoggedOff( SteamUser.LoggedOffCallback callback )
         {

@@ -64,6 +64,7 @@
   <ItemGroup>
     <Compile Include="Dota\DotaClient.cs" />
     <Compile Include="Dota\DotaGCClient.cs" />
+    <Compile Include="Dota\DotaMatchClient.cs" />
     <Compile Include="Networking\NetClient.cs" />
     <Compile Include="Networking\OOB\ClientAuthPacket.cs" />
     <Compile Include="Networking\OOB\ClientConnectPacket.cs" />

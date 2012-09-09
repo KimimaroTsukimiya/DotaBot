@@ -10,15 +10,17 @@ using SteamKit2;
 
 namespace DotaBot
 {
+
     class DotaClient
     {
-        NetClient tvClient;
+        DotaMatchClient matchClient;
         DotaGCClient gcClient;
 
 
-        public DotaClient()
+        public DotaClient( string user, string pass )
         {
-            gcClient = new DotaGCClient();
+            matchClient = new DotaMatchClient();
+            gcClient = new DotaGCClient( user, pass );
         }
 
 
@@ -26,24 +28,17 @@ namespace DotaBot
         {
             gcClient.Connect();
         }
-        public void ConnectToTV( IPEndPoint server )
+        public void ConnectToMatch( IPEndPoint server )
         {
-            tvClient = new NetClient( server );
+            matchClient.Connect( server );
         }
 
         public void RunFrame()
         {
-            RunNetworking();
-
+            matchClient.RunNetworking();
             gcClient.RunCallbacks();
         }
-        void RunNetworking()
-        {
-            if ( tvClient == null )
-                return;
 
-            // run stv networking logic
-        }
     }
 
 }
