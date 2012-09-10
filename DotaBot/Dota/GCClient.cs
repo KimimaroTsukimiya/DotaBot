@@ -23,6 +23,9 @@ namespace DotaBot
         protected string Password { get; private set; }
 
 
+        DateTime nextConnect;
+
+
         public GCClient( string user, string pass )
         {
             Username = user;
@@ -47,11 +50,17 @@ namespace DotaBot
 
         public void Connect()
         {
-            SteamClient.Connect();
+            nextConnect = DateTime.Now;
         }
 
         public void RunCallbacks()
         {
+            if ( DateTime.Now >= nextConnect )
+            {
+                nextConnect = DateTime.MaxValue;
+                SteamClient.Connect();
+            }
+
             CallbackManager.RunWaitCallbacks( TimeSpan.FromMilliseconds( 10 ) );
         }
 
@@ -75,6 +84,8 @@ namespace DotaBot
         protected virtual void OnDisconnected( SteamClient.DisconnectedCallback callback )
         {
             DebugLog.WriteLine( "GCClient", "Disconnected from steam!" );
+
+            nextConnect = DateTime.Now + TimeSpan.FromSeconds( 30 );
         }
 
         protected virtual void OnLoggedOn( SteamUser.LoggedOnCallback callback )
