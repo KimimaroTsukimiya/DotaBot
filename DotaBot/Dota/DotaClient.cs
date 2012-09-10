@@ -39,6 +39,7 @@ namespace DotaBot
 
         void gcClient_FoundMatch( object sender, FoundMatchEventArgs e )
         {
+            // todo: this code assumes we got the appticket in a timely fashion from steam
             matchClient.Connect( e.Server, e.Password, gcClient.AppTicket );
         }
 

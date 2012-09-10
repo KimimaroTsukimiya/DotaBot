@@ -12,6 +12,7 @@ namespace DotaBot
         static void Main( string[] args )
         {
             DebugLog.AddListener( new ConsoleListener() );
+            DebugLog.Enabled = true; // force debuglog in release
 
             DotaClient dc = new DotaClient( args[ 0 ], args[ 1 ] );
 
