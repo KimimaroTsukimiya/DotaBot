@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Security;
 using System.Text;
@@ -14,12 +15,21 @@ using SteamKit2.Internal;
 
 namespace DotaBot
 {
+    class FoundMatchEventArgs : EventArgs
+    {
+        public IPEndPoint Server { get; set; }
+        public string Password { get; set; }
+    }
+
     class DotaGCClient : GCClient
     {
         const uint APPID = 570;
 
 
         uint clientVersion;
+
+
+        public event Action<object, FoundMatchEventArgs> FoundMatch;
 
 
         public DotaGCClient( string user, string pass )
@@ -104,8 +114,21 @@ namespace DotaBot
                 return;
             }
 
-            DebugLog.WriteLine( "DotaGCClient", "Got STV details: {0}:{1} ({2})",
-                NetHelpers.GetIPAddress( response.Body.source_tv_public_addr ), response.Body.source_tv_port, response.Body.watch_tv_unique_secret_code );
+            IPEndPoint server = new IPEndPoint(
+                NetHelpers.GetIPAddress( response.Body.source_tv_public_addr ),
+                ( int )response.Body.source_tv_port
+            );
+
+            DebugLog.WriteLine( "DotaGCClient", "Got STV details: {0} ({1})", server, response.Body.watch_tv_unique_secret_code );
+
+            if ( FoundMatch != null )
+            {
+                FoundMatch( this, new FoundMatchEventArgs
+                {
+                    Server = server,
+                    Password = response.Body.watch_tv_unique_secret_code.ToString(),
+                } );
+            }
         }
     }
 }

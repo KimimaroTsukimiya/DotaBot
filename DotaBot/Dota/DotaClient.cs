@@ -10,7 +10,6 @@ using SteamKit2;
 
 namespace DotaBot
 {
-
     class DotaClient
     {
         DotaMatchClient matchClient;
@@ -20,7 +19,9 @@ namespace DotaBot
         public DotaClient( string user, string pass )
         {
             matchClient = new DotaMatchClient();
+
             gcClient = new DotaGCClient( user, pass );
+            gcClient.FoundMatch += gcClient_FoundMatch;
         }
 
 
@@ -28,15 +29,17 @@ namespace DotaBot
         {
             gcClient.Connect();
         }
-        public void ConnectToMatch( IPEndPoint server )
-        {
-            matchClient.Connect( server );
-        }
 
         public void RunFrame()
         {
             matchClient.RunNetworking();
             gcClient.RunCallbacks();
+        }
+
+
+        void gcClient_FoundMatch( object sender, FoundMatchEventArgs e )
+        {
+            matchClient.Connect( e.Server, e.Password );
         }
 
     }
