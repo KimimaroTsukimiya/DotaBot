@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using SteamKit2;
 
 namespace DotaBot
 {
@@ -42,7 +43,17 @@ namespace DotaBot
                 return null; // no packet yet
 
             IPEndPoint remoteEp = null;
-            byte[] data = socket.Receive( ref remoteEp );
+            byte[] data = null;
+
+            try
+            {
+                data = socket.Receive( ref remoteEp );
+            }
+            catch ( SocketException ex )
+            {
+                DebugLog.WriteLine( "NetClient", "Unable to receive packet: {0}", ex );
+                return null;
+            }
 
             return PacketFactory.GetPacket( data );
         }
