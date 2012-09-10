@@ -42,14 +42,8 @@ namespace DotaBot
         {
             base.OnLoggedOn( callback );
 
-            var playDota = new ClientMsgProtobuf<CMsgClientGamesPlayed>( EMsg.ClientGamesPlayedNoDataBlob );
-
-            playDota.Body.games_played.Add( new CMsgClientGamesPlayed.GamePlayed
-            {
-                game_id = new GameID( APPID ),
-            } );
-
-            SteamClient.Send( playDota );
+            SteamApps.GetAppOwnershipTicket( APPID );
+            SteamGames.PlayGame( APPID );
         }
 
         protected override void OnGCMessage( SteamGameCoordinator.MessageCallback callback )

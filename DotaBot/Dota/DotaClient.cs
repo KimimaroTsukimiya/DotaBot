@@ -39,7 +39,7 @@ namespace DotaBot
 
         void gcClient_FoundMatch( object sender, FoundMatchEventArgs e )
         {
-            matchClient.Connect( e.Server, e.Password );
+            matchClient.Connect( e.Server, e.Password, gcClient.AppTicket );
         }
 
     }

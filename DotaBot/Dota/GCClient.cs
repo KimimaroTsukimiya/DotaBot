@@ -18,9 +18,14 @@ namespace DotaBot
 
         protected SteamUser SteamUser { get; private set; }
         protected SteamGameCoordinator SteamGameCoordinator { get; private set; }
+        protected SteamApps SteamApps { get; private set; }
+        protected SteamGames SteamGames { get; private set; }
 
         protected string Username { get; private set; }
         protected string Password { get; private set; }
+
+
+        public byte[] AppTicket { get; private set; }
 
 
         DateTime nextConnect;
@@ -32,11 +37,14 @@ namespace DotaBot
             Password = pass;
 
             SteamClient = new SteamClient();
+            SteamClient.AddHandler( new SteamGames() );
 
             CallbackManager = new CallbackManager( SteamClient );
 
             SteamUser = SteamClient.GetHandler<SteamUser>();
             SteamGameCoordinator = SteamClient.GetHandler<SteamGameCoordinator>();
+            SteamApps = SteamClient.GetHandler<SteamApps>();
+            SteamGames = SteamClient.GetHandler<SteamGames>();
 
             new Callback<SteamClient.ConnectedCallback>( OnConnected, CallbackManager );
             new Callback<SteamClient.DisconnectedCallback>( OnDisconnected, CallbackManager );
@@ -45,6 +53,8 @@ namespace DotaBot
             new Callback<SteamUser.LoggedOffCallback>( OnLoggedOff, CallbackManager );
 
             new Callback<SteamGameCoordinator.MessageCallback>( OnGCMessage, CallbackManager );
+
+            new JobCallback<SteamApps.AppOwnershipTicketCallback>( OnAppTicket, CallbackManager );
         }
 
 
@@ -102,6 +112,18 @@ namespace DotaBot
             DebugLog.WriteLine( "GCClient", "OnGCMessage: {0}", GetEMsgDisplayString( callback.EMsg ) );
         }
 
+        protected virtual void OnAppTicket( SteamApps.AppOwnershipTicketCallback callback, JobID jobId )
+        {
+            if ( callback.Result != EResult.OK )
+            {
+                DebugLog.WriteLine( "GCClient", "Unable to get app ticket!" );
+                return;
+            }
+
+            DebugLog.WriteLine( "GCClient", "Got {0} appticket", callback.AppID );
+
+            AppTicket = callback.Ticket;
+        }
 
         static string GetEMsgDisplayString( uint eMsg )
         {

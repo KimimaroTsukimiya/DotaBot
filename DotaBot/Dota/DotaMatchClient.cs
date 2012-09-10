@@ -12,7 +12,8 @@ namespace DotaBot
     {
         NetClient tvClient;
 
-        string serverPassword;
+        string password;
+        byte[] appTicket;
         int clientChallenge;
 
 
@@ -22,11 +23,12 @@ namespace DotaBot
         }
 
 
-        public void Connect( IPEndPoint server, string password )
+        public void Connect( IPEndPoint server, string password, byte[] appTicket )
         {
             DebugLog.WriteLine( "DotaMatchClient", "Connecting to {0} using {1}", server, password );
 
-            serverPassword = password;
+            this.password = password;
+            this.appTicket = appTicket;
             clientChallenge = new Random().Next();
 
             tvClient.Connect( server );
@@ -84,7 +86,7 @@ namespace DotaBot
             var clientAuth = new ClientAuthPacket();
 
             clientAuth.Name = "test";
-            clientAuth.Password = serverPassword;
+            clientAuth.Password = password;
 
             clientAuth.IsLowViolence = false;
             clientAuth.Players.Add( new CCLCMsg_SplitPlayerConnect() ); // todo: do we need to send any userinfo convars?
@@ -92,7 +94,7 @@ namespace DotaBot
             clientAuth.ClientChallenge = clientChallenge;
             clientAuth.ServerChallenge = packet.ServerChallenge;
 
-            // todo: build appticket
+            // todo: build sessionheader + appticket
 
             tvClient.Send( clientAuth );
         }
