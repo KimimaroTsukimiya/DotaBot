@@ -13,13 +13,7 @@ namespace DotaBot
         {
             DebugLog.AddListener( new ConsoleListener() );
 
-            Console.Write( "Username: " );
-            string user = Console.ReadLine();
-
-            Console.Write( "Password: " );
-            string pass = Console.ReadLine();
-
-            DotaClient dc = new DotaClient( user, pass );
+            DotaClient dc = new DotaClient( args[ 0 ], args[ 1 ] );
 
             dc.ConnectToGC();
 

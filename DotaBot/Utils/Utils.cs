@@ -2,11 +2,23 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace DotaBot
 {
+    static class NetHelpers
+    {
+        public static IPAddress GetIPAddress( uint ipAddr )
+        {
+            byte[] addrBytes = BitConverter.GetBytes( ipAddr );
+            Array.Reverse( addrBytes );
+
+            return new IPAddress( addrBytes );
+        }
+    }
+
     static class BinaryUtils
     {
         public static string ReadNullTermString( this BinaryReader reader, Encoding encoding )

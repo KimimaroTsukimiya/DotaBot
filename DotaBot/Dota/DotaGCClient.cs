@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using SteamKit2;
 using SteamKit2.GC;
 using SteamKit2.GC.Dota;
+using SteamKit2.GC.Dota.Internal;
 using SteamKit2.GC.Internal;
 using SteamKit2.Internal;
 
@@ -15,6 +16,12 @@ namespace DotaBot
 {
     class DotaGCClient : GCClient
     {
+        const uint APPID = 570;
+
+
+        uint clientVersion;
+
+
         public DotaGCClient( string user, string pass )
             : base( user, pass )
         {
@@ -29,7 +36,7 @@ namespace DotaBot
 
             playDota.Body.games_played.Add( new CMsgClientGamesPlayed.GamePlayed
             {
-                game_id = new GameID( 570 ),
+                game_id = new GameID( APPID ),
             } );
 
             SteamClient.Send( playDota );
@@ -42,6 +49,8 @@ namespace DotaBot
             var dispatchMap = new Dictionary<uint, Action<IPacketGCMsg>>
             {
                 { EGCMsg.ClientWelcome, OnClientWelcome },
+                { EGCMsg.SourceTVGamesResponse, OnSourceTVGames },
+                { EGCMsg.WatchGameResponse, OnWatchGame },
             };
 
             Action<IPacketGCMsg> func;
@@ -55,7 +64,48 @@ namespace DotaBot
         {
             var clientWelcome = new ClientGCMsgProtobuf<CMsgClientWelcome>( msg );
 
-            DebugLog.WriteLine( "DotaGCClient", "ClientWelcome: {0}", clientWelcome.Body.version );
+            clientVersion = clientWelcome.Body.version;
+            DebugLog.WriteLine( "DotaGCClient", "GC is version {0}", clientWelcome.Body.version );
+
+            var findGames = new ClientGCMsgProtobuf<CMsgFindSourceTVGames>( EGCMsg.FindSourceTVGames );
+            findGames.Body.num_games = 10;
+
+            SteamGameCoordinator.Send( findGames, APPID );
+        }
+
+        void OnSourceTVGames( IPacketGCMsg msg )
+        {
+            var gamesList = new ClientGCMsgProtobuf<CMsgSourceTVGamesResponse>( msg );
+
+            DebugLog.WriteLine( "DotaGCClient", "There are currently {0} viewable games", gamesList.Body.num_total_games );
+
+            var game = gamesList.Body.games[ 0 ];
+
+            var watchGame = new ClientGCMsgProtobuf<CMsgWatchGame>( EGCMsg.WatchGame );
+            watchGame.Body.client_version = clientVersion;
+            watchGame.Body.server_steamid = game.server_steamid;
+
+            SteamGameCoordinator.Send( watchGame, APPID );
+        }
+
+        void OnWatchGame( IPacketGCMsg msg )
+        {
+            var response = new ClientGCMsgProtobuf<CMsgWatchGameResponse>( msg );
+
+            if ( response.Body.watch_game_result == CMsgWatchGameResponse.WatchGameResult.PENDING )
+            {
+                DebugLog.WriteLine( "DotaGCClient", "STV details pending..." );
+                return;
+            }
+
+            if ( response.Body.watch_game_result != CMsgWatchGameResponse.WatchGameResult.READY )
+            {
+                DebugLog.WriteLine( "DotaGCClient", "Unable to get STV details: {0}", response.Body.watch_game_result );
+                return;
+            }
+
+            DebugLog.WriteLine( "DotaGCClient", "Got STV details: {0}:{1} ({2})",
+                NetHelpers.GetIPAddress( response.Body.source_tv_public_addr ), response.Body.source_tv_port, response.Body.watch_tv_unique_secret_code );
         }
     }
 }
