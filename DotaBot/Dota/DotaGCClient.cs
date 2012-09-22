@@ -23,6 +23,12 @@ namespace DotaBot
 
     class DotaGCClient : GCClient
     {
+        static uint[] DOTA2Licenses = new uint[] {
+            4840,   // Dota 2 Beta
+            13054,  // Dota 2 - Hardware Survey
+            13802,  // Dota 2 - Gift
+        };
+
         const uint APPID = 570;
 
 
@@ -44,6 +50,28 @@ namespace DotaBot
 
             SteamApps.GetAppOwnershipTicket( APPID );
             SteamGames.PlayGame( APPID );
+        }
+
+        protected override void OnLicenseList( SteamApps.LicenseListCallback callback )
+        {
+            base.OnLicenseList( callback );
+            if ( !callback.LicenseList.Any( x => DOTA2Licenses.Contains(x.PackageID) ) )
+            {
+                var IGCVersion_570 = WebAPI.GetInterface("IGCVersion_570");
+                var versionKV = IGCVersion_570.Call( "GetClientVersion" );
+
+                var helloMsg = new ClientGCMsgProtobuf<CMsgClientHello>(EGCMsg.ClientHello);
+
+                DebugLog.WriteLine("GCClient", "Web Api says client version is {0}", versionKV["active_version"].AsInteger());
+                helloMsg.Body.version = (uint)versionKV["active_version"].AsInteger();
+
+                SteamGameCoordinator.Send(helloMsg, APPID);
+            }
+        }
+
+        protected override void OnAppTicket(SteamApps.AppOwnershipTicketCallback callback, JobID jobId)
+        {
+            base.OnAppTicket( callback, jobId );
         }
 
         protected override void OnGCMessage( SteamGameCoordinator.MessageCallback callback )

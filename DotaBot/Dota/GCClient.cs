@@ -52,6 +52,8 @@ namespace DotaBot
             new Callback<SteamUser.LoggedOnCallback>( OnLoggedOn, CallbackManager );
             new Callback<SteamUser.LoggedOffCallback>( OnLoggedOff, CallbackManager );
 
+            new Callback<SteamApps.LicenseListCallback>( OnLicenseList, CallbackManager );
+
             new Callback<SteamGameCoordinator.MessageCallback>( OnGCMessage, CallbackManager );
 
             new JobCallback<SteamApps.AppOwnershipTicketCallback>( OnAppTicket, CallbackManager );
@@ -105,6 +107,11 @@ namespace DotaBot
         protected virtual void OnLoggedOff( SteamUser.LoggedOffCallback callback )
         {
             DebugLog.WriteLine( "GCClient", "Logged off of steam: {0}", callback.Result );
+        }
+
+        protected virtual void OnLicenseList( SteamApps.LicenseListCallback callback )
+        {
+            DebugLog.WriteLine( "GCClient", "Got license list" );
         }
 
         protected virtual void OnGCMessage( SteamGameCoordinator.MessageCallback callback )
