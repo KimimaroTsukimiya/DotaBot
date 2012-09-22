@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using SteamKit2;
 
@@ -13,13 +14,16 @@ namespace DotaBot
         NetClient tvClient;
 
         string password;
-        byte[] appTicket;
         int clientChallenge;
 
+        TicketManager ticketManager;
 
-        public DotaMatchClient()
+
+        public DotaMatchClient( TicketManager ticketMgr )
         {
             tvClient = new NetClient();
+
+            ticketManager = ticketMgr;
         }
 
 
@@ -97,6 +101,8 @@ namespace DotaBot
             // todo: build sessionheader + appticket
 
             tvClient.Send( clientAuth );
+
+            // todo: have gc client auth with steam
         }
         void HandleServerReject( ServerRejectPacket packet )
         {

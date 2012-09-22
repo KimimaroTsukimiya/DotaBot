@@ -18,9 +18,11 @@ namespace DotaBot
 
         public DotaClient( string user, string pass )
         {
-            matchClient = new DotaMatchClient();
+            var ticketManager = new TicketManager();
 
-            gcClient = new DotaGCClient( user, pass );
+            matchClient = new DotaMatchClient( ticketManager );
+
+            gcClient = new DotaGCClient( user, pass, ticketManager );
             gcClient.FoundMatch += gcClient_FoundMatch;
         }
 

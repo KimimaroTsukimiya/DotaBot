@@ -69,6 +69,7 @@
     <Compile Include="Dota\Generated\DotaClientMessages.cs" />
     <Compile Include="Dota\Generated\DotaCommonMessages.cs" />
     <Compile Include="Dota\Generated\DotaNetMessages.cs" />
+    <Compile Include="Dota\Tickets\TicketManager.cs" />
     <Compile Include="Networking\NetClient.cs" />
     <Compile Include="Networking\OOB\ClientAuthPacket.cs" />
     <Compile Include="Networking\OOB\ClientConnectPacket.cs" />
