@@ -20,6 +20,7 @@ namespace DotaBot
         protected SteamGameCoordinator SteamGameCoordinator { get; private set; }
         protected SteamApps SteamApps { get; private set; }
         protected SteamGames SteamGames { get; private set; }
+        protected SteamFriends SteamFriends { get; private set; }
 
         protected string Username { get; private set; }
         protected string Password { get; private set; }
@@ -45,6 +46,7 @@ namespace DotaBot
             SteamGameCoordinator = SteamClient.GetHandler<SteamGameCoordinator>();
             SteamApps = SteamClient.GetHandler<SteamApps>();
             SteamGames = SteamClient.GetHandler<SteamGames>();
+            SteamFriends = SteamClient.GetHandler<SteamFriends>();
 
             new Callback<SteamClient.ConnectedCallback>( OnConnected, CallbackManager );
             new Callback<SteamClient.DisconnectedCallback>( OnDisconnected, CallbackManager );

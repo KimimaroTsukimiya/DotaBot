@@ -42,29 +42,38 @@ namespace DotaBot
         {
             base.Serialize( stream );
 
-            using ( var bw = new BinaryWriter( stream, Encoding.ASCII, true ) )
+            var bw = new BitWriter();
+
+            bw.WriteInt32( Protocol );
+            bw.WriteInt32(AuthProtocol);
+
+            bw.WriteInt32(ServerChallenge);
+            bw.WriteInt32(ClientChallenge);
+
+            bw.WriteString( Name );
+            bw.WriteString( Password );
+
+            bw.WriteByte( ( byte )Players.Count );
+
+            foreach ( var player in Players )
             {
-                bw.Write( Protocol );
-                bw.Write( AuthProtocol );
-
-                bw.Write( ServerChallenge );
-                bw.Write( ClientChallenge );
-
-                bw.WriteNullTermString( Name );
-                bw.WriteNullTermString( Password );
-
-                bw.Write( ( byte )Players.Count );
-
-                foreach ( var player in Players )
+                bw.WriteByte( ( byte )CLC_Messages.clc_SplitPlayerConnect );
+                using (var ms = new MemoryStream())
                 {
-                    bw.Write( ( byte )CLC_Messages.clc_SplitPlayerConnect );
-                    Serializer.SerializeWithLengthPrefix( stream, player, PrefixStyle.Base128 );
+                    Serializer.SerializeWithLengthPrefix(ms, player, PrefixStyle.Base128);
+                    bw.WriteBytes(ms.ToArray());
                 }
-
-                // todo: violence bit, auth ticket
             }
-        }
 
+            // bLowViolence
+            bw.WriteBits(0, 1);
+
+            bw.WriteUInt16((ushort)Ticket.Length);
+            bw.WriteBytes(Ticket);
+
+            stream.Write(bw.Data, 0, bw.Data.Length - 1);
+        }
+/*
         public override void Deserialize( Stream stream )
         {
             base.Deserialize( stream );
@@ -100,5 +109,6 @@ namespace DotaBot
             }
 
         }
+        */
     }
 }

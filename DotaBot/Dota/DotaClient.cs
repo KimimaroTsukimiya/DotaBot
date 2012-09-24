@@ -22,7 +22,7 @@ namespace DotaBot
 
             matchClient = new DotaMatchClient( ticketManager );
 
-            gcClient = new DotaGCClient( user, pass, ticketManager );
+            gcClient = new DotaGCClient( user, pass );
             gcClient.FoundMatch += gcClient_FoundMatch;
         }
 

@@ -1,181 +1,741 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Diagnostics; // Assert
+using System.Collections; // ArrayList
+using System.IO;
 
 namespace DotaBot
 {
-    class BitReader : IDisposable
+    [Serializable]
+    public class BitBufferOutOfRangeException : Exception
     {
-        BinaryReader reader;
-
-        readonly uint[] MaskTable =
+        public BitBufferOutOfRangeException()
         {
-            0,
-            ( 1 << 1 ) - 1,
-            ( 1 << 2 ) - 1,
-            ( 1 << 3 ) - 1,
-            ( 1 << 4 ) - 1,
-            ( 1 << 5 ) - 1,
-            ( 1 << 6 ) - 1,
-            ( 1 << 7 ) - 1,
-            ( 1 << 8 ) - 1,
-            ( 1 << 9 ) - 1,
-            ( 1 << 10 ) - 1,
-            ( 1 << 11 ) - 1,
-            ( 1 << 12 ) - 1,
-            ( 1 << 13 ) - 1,
-            ( 1 << 14 ) - 1,
-            ( 1 << 15 ) - 1,
-            ( 1 << 16 ) - 1,
-            ( 1 << 17 ) - 1,
-            ( 1 << 18 ) - 1,
-            ( 1 << 19 ) - 1,
-            ( 1 << 20 ) - 1,
-            ( 1 << 21 ) - 1,
-            ( 1 << 22 ) - 1,
-            ( 1 << 23 ) - 1,
-            ( 1 << 24 ) - 1,
-            ( 1 << 25 ) - 1,
-            ( 1 << 26 ) - 1,
-            ( 1 << 27 ) - 1,
-            ( 1 << 28 ) - 1,
-            ( 1 << 29 ) - 1,
-            ( 1 << 30 ) - 1,
-            0x7fffffff,
-            0xffffffff,
-        };
+        }
+    }
 
-        int bitsInBuffer;
-        uint bufferedWord;
-
-
-        public BitReader( Stream stream, bool leaveOpen = false )
+    public class BitBuffer
+    {
+        public enum EndianType
         {
-            reader = new BinaryReader( stream, Encoding.UTF8, leaveOpen );
+            Little,
+            Big
         }
 
-
-        public byte[] ReadBits( int numBits )
+        #region Properties
+        /// <summary>
+        /// Data length in bytes.
+        /// </summary>
+        public Int32 Length
         {
-            byte[] output = new byte[ numBits >> 3 ];
-            int numBitsLeft = numBits;
-
-            for ( int x = 0 ; x < output.Length  ; ++x )
+            get
             {
-                output[ x ] = ( byte )ReadUBitLong( 8 );
+                return data.Count;
+            }
+        }
+
+        public Int32 CurrentBit
+        {
+            get
+            {
+                return currentBit;
+            }
+        }
+
+        public Int32 CurrentByte
+        {
+            get
+            {
+                return (currentBit - (currentBit % 8)) / 8;
+            }
+        }
+
+        public Int32 BitsLeft
+        {
+            get
+            {
+                return (data.Count * 8) - currentBit;
+            }
+        }
+
+        public Int32 BytesLeft
+        {
+            get
+            {
+                return data.Count - CurrentByte;
+            }
+        }
+
+        public Byte[] Data
+        {
+            get
+            {
+                return data.ToArray();
+            }
+        }
+
+        public EndianType Endian
+        {
+            get;
+            set;
+        }
+        #endregion
+
+        private List<Byte> data = null;
+        private Int32 currentBit = 0;
+
+        public BitBuffer(Byte[] data)
+        {
+            if (data == null)
+            {
+                throw new ArgumentNullException("data", "Value cannot be null.");
             }
 
-            return output;
+            this.data = new List<Byte>(data);
+            Endian = EndianType.Little;
         }
 
-        public byte[] ReadBytes( int numBytes )
+        public void SeekBits(Int32 count)
         {
-            return ReadBits( numBytes << 3 );
+            SeekBits(count, SeekOrigin.Current);
         }
 
-        public uint ReadUBitLong( int numBits )
+        public void SeekBits(Int32 offset, SeekOrigin origin)
         {
-            if ( bitsInBuffer >= numBits )
+            if (origin == SeekOrigin.Current)
             {
-                // we have enough buffered bits to read this off
+                currentBit += offset;
+            }
+            else if (origin == SeekOrigin.Begin)
+            {
+                currentBit = offset;
+            }
+            else if (origin == SeekOrigin.End)
+            {
+                currentBit = (data.Count * 8) - offset;
+            }
 
-                uint nRet = bufferedWord & MaskTable[ numBits ];
-                bitsInBuffer -= numBits;
+            if (currentBit < 0 || currentBit > data.Count * 8)
+            {
+                throw new BitBufferOutOfRangeException();
+            }
+        }
 
-                if ( bitsInBuffer > 0 )
+        public void SeekBytes(Int32 count)
+        {
+            SeekBits(count * 8);
+        }
+
+        public void SeekBytes(Int32 offset, SeekOrigin origin)
+        {
+            SeekBits(offset * 8, origin);
+        }
+
+        /// <summary>
+        /// Seeks past the remaining bits in the current byte.
+        /// </summary>
+        public void SkipRemainingBits()
+        {
+            Int32 bitOffset = currentBit % 8;
+
+            if (bitOffset != 0)
+            {
+                SeekBits(8 - bitOffset);
+            }
+        }
+
+        // HL 1.1.0.6 bit reading (big endian byte and bit order)
+        private UInt32 ReadUnsignedBitsBigEndian(Int32 nBits)
+        {
+            if (nBits <= 0 || nBits > 32)
+            {
+                throw new ArgumentException("Value must be a positive integer between 1 and 32 inclusive.", "nBits");
+            }
+
+            // check for overflow
+            if (currentBit + nBits > data.Count * 8)
+            {
+                throw new BitBufferOutOfRangeException();
+            }
+
+            Int32 currentByte = currentBit / 8;
+            Int32 bitOffset = currentBit - (currentByte * 8);
+            Int32 nBytesToRead = (bitOffset + nBits) / 8;
+
+            if ((bitOffset + nBits) % 8 != 0)
+            {
+                nBytesToRead++;
+            }
+
+            // get bytes we need
+            UInt64 currentValue = 0;
+            for (Int32 i = 0; i < nBytesToRead; i++)
+            {
+                Byte b = data[currentByte + (nBytesToRead - 1) - i];
+                currentValue += (UInt64)((UInt64)b << (i * 8));
+            }
+
+            // get bits we need from bytes
+            currentValue >>= ((nBytesToRead * 8 - bitOffset) - nBits);
+            currentValue &= (UInt32)(((Int64)1 << nBits) - 1);
+
+            // increment current bit
+            currentBit += nBits;
+
+            return (UInt32)currentValue;
+        }
+
+        private UInt32 ReadUnsignedBitsLittleEndian(Int32 nBits)
+        {
+            if (nBits <= 0 || nBits > 32)
+            {
+                throw new ArgumentException("Value must be a positive integer between 1 and 32 inclusive.", "nBits");
+            }
+
+            // check for overflow
+            if (currentBit + nBits > data.Count * 8)
+            {
+                throw new BitBufferOutOfRangeException();
+            }
+
+            Int32 currentByte = currentBit / 8;
+            Int32 bitOffset = currentBit - (currentByte * 8);
+            Int32 nBytesToRead = (bitOffset + nBits) / 8;
+
+            if ((bitOffset + nBits) % 8 != 0)
+            {
+                nBytesToRead++;
+            }
+
+            // get bytes we need
+            UInt64 currentValue = 0;
+            for (Int32 i = 0; i < nBytesToRead; i++)
+            {
+                Byte b = data[currentByte + i];
+                currentValue += (UInt64)((UInt64)b << (i * 8));
+            }
+
+            // get bits we need from bytes
+            currentValue >>= bitOffset;
+            currentValue &= (UInt32)(((Int64)1 << nBits) - 1);
+
+            // increment current bit
+            currentBit += nBits;
+
+            return (UInt32)currentValue;
+        }
+
+        public UInt32 ReadUnsignedBits(Int32 nBits)
+        {
+            if (Endian == EndianType.Little)
+            {
+                return ReadUnsignedBitsLittleEndian(nBits);
+            }
+            else
+            {
+                return ReadUnsignedBitsBigEndian(nBits);
+            }
+        }
+
+        public Int32 ReadBits(Int32 nBits)
+        {
+            Int32 result = (Int32)ReadUnsignedBits(nBits - 1);
+            Int32 sign = (ReadBoolean() ? 1 : 0);
+
+            if (sign == 1)
+            {
+                result = -((1 << (nBits - 1)) - result);
+            }
+
+            return result;
+        }
+
+        public Boolean ReadBoolean()
+        {
+            // check for overflow
+            if (currentBit + 1 > data.Count * 8)
+            {
+                throw new BitBufferOutOfRangeException();
+            }
+
+            Boolean result = (data[currentBit / 8] & ((Endian == EndianType.Little ? 1 << currentBit % 8 : 128 >> currentBit % 8))) == 0 ? false : true;
+            currentBit++;
+            return result;
+        }
+
+        public Byte ReadByte()
+        {
+            return (Byte)ReadUnsignedBits(8);
+        }
+
+        public SByte ReadSByte()
+        {
+            return (SByte)ReadBits(8);
+        }
+
+        public Byte[] ReadBytes(Int32 nBytes)
+        {
+            Byte[] result = new Byte[nBytes];
+
+            for (Int32 i = 0; i < nBytes; i++)
+            {
+                result[i] = ReadByte();
+            }
+
+            return result;
+        }
+
+        public Char[] ReadChars(Int32 nChars)
+        {
+            Char[] result = new Char[nChars];
+
+            for (Int32 i = 0; i < nChars; i++)
+            {
+                result[i] = (Char)ReadByte(); // not unicode
+            }
+
+            return result;
+        }
+
+        public Int16 ReadInt16()
+        {
+            return (Int16)ReadBits(16);
+        }
+
+        public UInt16 ReadUInt16()
+        {
+            return (UInt16)ReadUnsignedBits(16);
+        }
+
+        public Int32 ReadInt32()
+        {
+            return ReadBits(32);
+        }
+
+        public UInt32 ReadUInt32()
+        {
+            return ReadUnsignedBits(32);
+        }
+
+        public Single ReadSingle()
+        {
+            return BitConverter.ToSingle(ReadBytes(4), 0);
+        }
+
+        /// <summary>
+        /// Read a null-terminated string, then skip any remaining bytes to make up length bytes.
+        /// </summary>
+        /// <param name="length">The total number of bytes to read.</param>
+        /// <returns></returns>
+        public String ReadString(Int32 length)
+        {
+            Int32 startBit = currentBit;
+            String s = ReadString();
+            SeekBits(length * 8 - (currentBit - startBit));
+            return s;
+        }
+
+        public String ReadString()
+        {
+            List<Byte> bytes = new List<Byte>();
+
+            while (true)
+            {
+                Byte b = ReadByte();
+
+                if (b == 0x00)
                 {
-                    // still some bits left
-                    bufferedWord >>= numBits;
+                    break;
+                }
+
+                bytes.Add(b);
+            }
+
+            return Encoding.UTF8.GetString(bytes.ToArray());
+        }
+
+        public Single[] ReadVectorCoord()
+        {
+            return ReadVectorCoord(false);
+        }
+
+        public Single[] ReadVectorCoord(Boolean goldSrc)
+        {
+            Boolean xFlag = ReadBoolean();
+            Boolean yFlag = ReadBoolean();
+            Boolean zFlag = ReadBoolean();
+
+            Single[] result = new Single[3];
+
+            if (xFlag)
+            {
+                result[0] = ReadCoord(goldSrc);
+            }
+
+            if (yFlag)
+            {
+                result[1] = ReadCoord(goldSrc);
+            }
+
+            if (zFlag)
+            {
+                result[2] = ReadCoord(goldSrc);
+            }
+
+            return result;
+        }
+
+        public Single ReadCoord()
+        {
+            return ReadCoord(false);
+        }
+
+        public Single ReadCoord(Boolean goldSrc)
+        {
+            Boolean intFlag = ReadBoolean();
+            Boolean fractionFlag = ReadBoolean();
+
+            Single value = 0.0f;
+
+            if (!intFlag && !fractionFlag)
+            {
+                return value;
+            }
+
+            Boolean sign = ReadBoolean();
+            UInt32 intValue = 0;
+            UInt32 fractionValue = 0;
+
+            if (intFlag)
+            {
+                if (goldSrc)
+                {
+                    intValue = ReadUnsignedBits(12);
                 }
                 else
                 {
-                    // no bits left, grab 32 more
-                    LoadNextDWord();
+                    intValue = ReadUnsignedBits(14) + 1;
+                }
+            }
+
+            if (fractionFlag)
+            {
+                if (goldSrc)
+                {
+                    fractionValue = ReadUnsignedBits(3);
+                }
+                else
+                {
+                    fractionValue = ReadUnsignedBits(5);
+                }
+            }
+
+            value = intValue + ((Single)fractionValue * 1.0f / 32.0f);
+
+            if (sign)
+            {
+                value = -value;
+            }
+
+            return value;
+        }
+
+        /// <summary>
+        /// Sets all bits to zero, starting with the current bit and up to nBits.
+        /// Used for Fade to Black removal.
+        /// </summary>
+        /// <param name="nBits"></param>
+        public void ZeroOutBits(Int32 nBits)
+        {
+            for (Int32 i = 0; i < nBits; i++)
+            {
+                Int32 currentByte = currentBit / 8;
+                Int32 bitOffset = currentBit - (currentByte * 8);
+
+                Byte temp = data[currentByte];
+                temp -= (Byte)(data[currentByte] & (1 << bitOffset));
+                data[currentByte] = temp;
+
+                currentBit++;
+            }
+        }
+
+        public void PrintBits(StreamWriter writer, Int32 nBits)
+        {
+            if (writer == null || nBits == 0)
+            {
+                return;
+            }
+
+            StringBuilder sb = new StringBuilder();
+
+            for (Int32 i = 0; i < nBits; i++)
+            {
+                sb.AppendFormat("{0}", (ReadBoolean() ? 1 : 0));
+            }
+
+            writer.Write(sb.ToString() + "\n");
+        }
+
+        public void InsertBytes(Byte[] insertData)
+        {
+            if (insertData.Length == 0)
+            {
+                return;
+            }
+
+            if (currentBit % 8 != 0)
+            {
+                throw new ApplicationException("InsertBytes can only be called if the current bit is aligned to byte boundaries.");
+            }
+
+            data.InsertRange(CurrentByte, insertData);
+            currentBit += insertData.Length * 8;
+        }
+
+        public void RemoveBytes(Int32 count)
+        {
+            if (count == 0)
+            {
+                return;
+            }
+
+            if (currentBit % 8 != 0)
+            {
+                throw new ApplicationException("RemoveBytes can only be called if the current bit is aligned to byte boundaries.");
+            }
+
+            if (CurrentByte + count > this.Length)
+            {
+                throw new BitBufferOutOfRangeException();
+            }
+
+            data.RemoveRange(CurrentByte, count);
+        }
+    }
+
+    public class BitWriter
+    {
+        private List<Byte> data = null;
+        private Int32 currentBit = 0;
+
+        public Byte[] Data
+        {
+            get
+            {
+                return data.ToArray();
+            }
+        }
+
+        public BitWriter()
+        {
+            data = new List<Byte>();
+        }
+
+        public void WriteUnsignedBits(UInt32 value, Int32 nBits)
+        {
+            Int32 currentByte = currentBit / 8;
+            Int32 bitOffset = currentBit - (currentByte * 8);
+
+            // calculate how many bits need to be written to the current byte
+            Int32 bitsToWriteToCurrentByte = 8 - bitOffset;
+            if (bitsToWriteToCurrentByte > nBits)
+            {
+                bitsToWriteToCurrentByte = nBits;
+            }
+
+            // calculate how many bytes need to be added to the list
+            Int32 bytesToAdd = 0;
+
+            if (nBits > bitsToWriteToCurrentByte)
+            {
+                Int32 temp = nBits - bitsToWriteToCurrentByte;
+                bytesToAdd = temp / 8;
+
+                if ((temp % 8) != 0)
+                {
+                    bytesToAdd++;
+                }
+            }
+
+            if (bitOffset == 0)
+            {
+                bytesToAdd++;
+            }
+
+            // add new bytes if needed
+            for (Int32 i = 0; i < bytesToAdd; i++)
+            {
+                data.Add(new Byte());
+            }
+
+            Int32 nBitsWritten = 0;
+
+            // write bits to the current byte
+            Byte b = (Byte)(value & ((1 << bitsToWriteToCurrentByte) - 1));
+            b <<= bitOffset;
+            b += data[currentByte];
+            data[currentByte] = b;
+
+            nBitsWritten += bitsToWriteToCurrentByte;
+            currentByte++;
+
+            // write bits to all the newly added bytes
+            while (nBitsWritten < nBits)
+            {
+                bitsToWriteToCurrentByte = nBits - nBitsWritten;
+                if (bitsToWriteToCurrentByte > 8)
+                {
+                    bitsToWriteToCurrentByte = 8;
                 }
 
-                return nRet;
+                b = (Byte)((value >> nBitsWritten) & ((1 << bitsToWriteToCurrentByte) - 1));
+                data[currentByte] = b;
+
+                nBitsWritten += bitsToWriteToCurrentByte;
+                currentByte++;
+            }
+
+            // set new current bit
+            currentBit += nBits;
+        }
+
+        public void WriteBits(Int32 value, Int32 nBits)
+        {
+            WriteUnsignedBits((UInt32)value, nBits - 1);
+
+            UInt32 sign = (value < 0 ? 1u : 0u);
+            WriteUnsignedBits(sign, 1);
+        }
+
+        public void WriteBoolean(Boolean value)
+        {
+            Int32 currentByte = currentBit / 8;
+
+            if (currentByte > data.Count - 1)
+            {
+                data.Add(new Byte());
+            }
+
+            if (value)
+            {
+                data[currentByte] += (Byte)(1 << currentBit % 8);
+            }
+
+            currentBit++;
+        }
+
+        public void WriteByte(Byte value)
+        {
+            WriteUnsignedBits((UInt32)value, 8);
+        }
+
+        public void WriteSByte(SByte value)
+        {
+            WriteBits((Int32)value, 8);
+        }
+
+        public void WriteBytes(Byte[] values)
+        {
+            for (Int32 i = 0; i < values.Length; i++)
+            {
+                WriteByte(values[i]);
+            }
+        }
+
+        public void WriteChars(Char[] values)
+        {
+            for (Int32 i = 0; i < values.Length; i++)
+            {
+                WriteByte((Byte)values[i]);
+            }
+        }
+
+        public void WriteInt16(Int16 value)
+        {
+            WriteBits((Int32)value, 16);
+        }
+
+        public void WriteUInt16(UInt16 value)
+        {
+            WriteUnsignedBits((UInt32)value, 16);
+        }
+
+        public void WriteInt32(Int32 value)
+        {
+            WriteBits(value, 32);
+        }
+
+        public void WriteUInt32(UInt32 value)
+        {
+            WriteUnsignedBits(value, 32);
+        }
+
+        public void WriteString(String value)
+        {
+            for (Int32 i = 0; i < value.Length; i++)
+            {
+                WriteByte((Byte)value[i]);
+            }
+
+            // null terminator
+            WriteByte(0);
+        }
+
+        public void WriteString(String value, Int32 length)
+        {
+            if (length < value.Length + 1)
+            {
+                throw new ApplicationException("String length longer than specified length.");
+            }
+
+            WriteString(value);
+
+            // write padding 0's
+            for (Int32 i = 0; i < length - (value.Length + 1); i++)
+            {
+                WriteByte(0);
+            }
+        }
+
+        public void WriteVectorCoord(Boolean goldSrc, Single[] coord)
+        {
+            WriteBoolean(true);
+            WriteBoolean(true);
+            WriteBoolean(true);
+            WriteCoord(goldSrc, coord[0]);
+            WriteCoord(goldSrc, coord[1]);
+            WriteCoord(goldSrc, coord[2]);
+        }
+
+        public void WriteCoord(Boolean goldSrc, Single value)
+        {
+            WriteBoolean(true); // int flag
+            WriteBoolean(true); // fraction flag
+
+            // sign
+            if (value < 0.0f)
+            {
+                WriteBoolean(true);
             }
             else
             {
-                // not enough bits, merge what's buffered with the next dword
-
-                uint nRet = bufferedWord;
-                numBits -= bitsInBuffer;
-
-                LoadNextDWord();
-
-                nRet |= ( ( bufferedWord & MaskTable[ numBits ] ) << bitsInBuffer );
-
-                bitsInBuffer = 32 - numBits;
-                bufferedWord >>= numBits;
-
-                return nRet;
+                WriteBoolean(false);
             }
-        }
-        public int ReadSBitLong( int numBits )
-        {
-            uint r = ReadUBitLong( numBits );
-            uint s = ( uint )( 1 << ( numBits - 1 ) );
 
-            if ( r >= s )
+            UInt32 intValue = (UInt32)value;
+
+            if (goldSrc)
             {
-                r = r - s - s;
+                WriteUnsignedBits(intValue, 12);
+                WriteUnsignedBits(0, 3); // FIXME
             }
-
-            return ( int )r;
-        }
-
-        public uint ReadBitLong( int numBits, bool signed )
-        {
-            if ( signed )
-                return ( uint )ReadSBitLong( numBits );
             else
-                return ReadUBitLong( numBits );
-        }
-
-        public bool ReadOneBit()
-        {
-            return ReadUBitLong( 1 ) > 0;
-        }
-
-
-        public void Dispose()
-        {
-            reader.Dispose();
-        }
-
-
-        void LoadNextDWord()
-        {
-            int remaining = ( int )( reader.BaseStream.Length - reader.BaseStream.Position );
-
-            switch ( remaining )
             {
-                case 3:
-                    bufferedWord = ( uint )( reader.ReadByte() | ( reader.ReadByte() << 8 ) | ( reader.ReadByte() << 16 ) );
-                    break;
-
-                case 2:
-                    bufferedWord = reader.ReadUInt16();
-                    break;
-
-                case 1:
-                    bufferedWord = ( uint )reader.ReadByte();
-                    break;
-
-                case 0:
-                    throw new Exception( "wtf" );
-
-                default:
-                    bufferedWord = reader.ReadUInt32();
-                    break;
+                WriteUnsignedBits(intValue - 1, 14);
+                WriteUnsignedBits(0, 5); // FIXME
             }
-
-            bitsInBuffer = 32;
         }
     }
 }

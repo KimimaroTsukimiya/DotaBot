@@ -17,7 +17,7 @@ namespace DotaBot
         int connectCount = 0;
         int timeStart;
 
-        IPAddress ipAddr;
+        IPAddress ipAddr = IPAddress.Parse("174.100.187.193");
 
 
         public TicketManager()

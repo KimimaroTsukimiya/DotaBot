@@ -23,6 +23,8 @@ namespace DotaBot
 
     class DotaGCClient : GCClient
     {
+        public static DotaGCClient TheDotaGCClient;
+
         static uint[] DOTA2Licenses = new uint[] {
             4840,   // Dota 2 Beta
             13054,  // Dota 2 - Hardware Survey
@@ -34,13 +36,24 @@ namespace DotaBot
 
         uint clientVersion;
 
-
         public event Action<object, FoundMatchEventArgs> FoundMatch;
 
 
         public DotaGCClient( string user, string pass )
             : base( user, pass )
         {
+            Debug.Assert(TheDotaGCClient == null, "TheDotaGCClient has been set again!");
+            TheDotaGCClient = this;
+        }
+
+        public SteamUser GetSteamUser()
+        {
+            return SteamUser;
+        }
+
+        public SteamFriends GetSteamFriends()
+        {
+            return SteamFriends;
         }
 
 
@@ -55,7 +68,7 @@ namespace DotaBot
         protected override void OnLicenseList( SteamApps.LicenseListCallback callback )
         {
             base.OnLicenseList( callback );
-            if ( !callback.LicenseList.Any( x => DOTA2Licenses.Contains(x.PackageID) ) )
+            if ( true /*!callback.LicenseList.Any( x => DOTA2Licenses.Contains(x.PackageID) ) */)
             {
                 var IGCVersion_570 = WebAPI.GetInterface("IGCVersion_570");
                 var versionKV = IGCVersion_570.Call( "GetClientVersion" );
@@ -141,7 +154,7 @@ namespace DotaBot
                 ( int )response.Body.source_tv_port
             );
 
-            DebugLog.WriteLine( "DotaGCClient", "Got STV details: {0} ({1})", server, response.Body.watch_tv_unique_secret_code );
+            DebugLog.WriteLine("DotaGCClient", "Got STV details: {0} ({1}) ({2})", server, response.Body.watch_tv_unique_secret_code, server);
 
             if ( FoundMatch != null )
             {
