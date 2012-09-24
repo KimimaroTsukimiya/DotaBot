@@ -22,7 +22,7 @@ namespace DotaBot
         {
             base.Serialize( stream );
 
-            using ( var bw = new BinaryWriter( stream, Encoding.ASCII, true ) )
+            using ( var bw = new BinaryWriter( stream, Encoding.UTF8, true ) )
             {
                 bw.Write( ClientChallenge );
                 bw.WriteNullTermString( "0000000000" ); // write padding
@@ -33,7 +33,7 @@ namespace DotaBot
         {
             base.Deserialize( stream );
 
-            using ( var br = new BinaryReader( stream, Encoding.ASCII, true ) )
+            using ( var br = new BinaryReader( stream, Encoding.UTF8, true ) )
             {
                 ClientChallenge = br.ReadInt32();
                 // we don't care about the padding when reading

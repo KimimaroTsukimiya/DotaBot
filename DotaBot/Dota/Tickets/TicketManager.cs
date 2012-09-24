@@ -34,6 +34,8 @@ namespace DotaBot
         public void UpdateTokens( List<byte[]> tokens )
         {
             tokens.ForEach( t => currentTokens.Enqueue( t ) );
+
+            DebugLog.WriteLine( "TicketManager", "Got {0} tokens from Steam, {1} total", tokens.Count, currentTokens.Count );
         }
         public void UpdateIP( IPAddress ipAddr )
         {

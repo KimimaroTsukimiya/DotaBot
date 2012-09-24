@@ -46,7 +46,7 @@ namespace DotaBot
 
         public static string ReadNullTermString( this BinaryReader reader )
         {
-            return ReadNullTermString( reader, Encoding.ASCII );
+            return ReadNullTermString( reader, Encoding.UTF8 );
         }
 
         public static void WriteNullTermString( this BinaryWriter writer, Encoding encoding, string value )
@@ -57,7 +57,7 @@ namespace DotaBot
 
         public static void WriteNullTermString( this BinaryWriter writer, string value )
         {
-            WriteNullTermString( writer, Encoding.ASCII, value );
+            WriteNullTermString( writer, Encoding.UTF8, value );
         }
 
     }

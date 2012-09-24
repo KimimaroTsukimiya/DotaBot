@@ -35,8 +35,6 @@ namespace DotaBot
 
         void HandleGameConnectTokens( IPacketMsg packetMsg )
         {
-            DebugLog.WriteLine( "GCClient", "Got GameConnectTokens from Steam" );
-
             var gameConnectTokens = new ClientMsgProtobuf<CMsgClientGameConnectTokens>( packetMsg );
 
             TicketManager.Instance.UpdateTokens( gameConnectTokens.Body.tokens );

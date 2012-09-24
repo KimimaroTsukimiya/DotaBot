@@ -16,7 +16,7 @@ namespace DotaBot
             Packet packet = null;
 
             using ( var ms = new MemoryStream( data ) )
-            using ( var br = new BinaryReader( ms, Encoding.ASCII ) )
+            using ( var br = new BinaryReader( ms, Encoding.UTF8 ) )
             {
                 int channel = br.ReadInt32();
 
@@ -30,7 +30,8 @@ namespace DotaBot
                         break; // todo: split packet
 
                     default:
-                        break; // todo: in-band
+                        packet = new NetMessagePacket();
+                        break;
                 }
 
                 if ( packet == null )
@@ -51,7 +52,7 @@ namespace DotaBot
         static OutOfBandPacket GetOOBPacket( byte[] data )
         {
             using ( var ms = new MemoryStream( data ) )
-            using ( var br = new BinaryReader( ms, Encoding.ASCII ) )
+            using ( var br = new BinaryReader( ms, Encoding.UTF8 ) )
             {
                 br.ReadInt32(); // skip channel
                 OutOfBandPacketType type = ( OutOfBandPacketType )br.ReadByte();

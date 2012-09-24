@@ -37,7 +37,7 @@ namespace DotaBot
         {
             base.Serialize( stream );
 
-            using ( var bw = new BinaryWriter( stream, Encoding.ASCII, true ) )
+            using ( var bw = new BinaryWriter( stream, Encoding.UTF8, true ) )
             {
                 bw.Write( MAGIC );
 
@@ -56,7 +56,7 @@ namespace DotaBot
         {
             base.Deserialize( stream );
 
-            using ( var br = new BinaryReader( stream, Encoding.ASCII, true ) )
+            using ( var br = new BinaryReader( stream, Encoding.UTF8, true ) )
             {
                 br.ReadInt32(); // ignore magic
 

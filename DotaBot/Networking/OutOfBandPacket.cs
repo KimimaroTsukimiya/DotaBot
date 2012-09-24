@@ -31,7 +31,7 @@ namespace DotaBot
 
         public override void Serialize( Stream stream )
         {
-            using ( var bw = new BinaryWriter( stream, Encoding.ASCII, true ) )
+            using ( var bw = new BinaryWriter( stream, Encoding.UTF8, true ) )
             {
                 bw.Write( Channel );
                 bw.Write( ( byte )Type );
@@ -40,7 +40,7 @@ namespace DotaBot
 
         public override void Deserialize( Stream stream )
         {
-            using ( var br = new BinaryReader( stream, Encoding.ASCII, true ) )
+            using ( var br = new BinaryReader( stream, Encoding.UTF8, true ) )
             {
                 Channel = br.ReadInt32();
                 Type = ( OutOfBandPacketType )br.ReadByte();

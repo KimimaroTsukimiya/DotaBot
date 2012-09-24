@@ -56,8 +56,7 @@ namespace DotaBot
             }
             else
             {
-                // todo: we probablty want a NetPacket or something to handle splits and net messages
-                // HandlePacket( packet );
+                 HandleNetPacket( packet as NetMessagePacket /* todo: NetPacket */ );
             }
         }
 
@@ -105,10 +104,15 @@ namespace DotaBot
         {
             DebugLog.WriteLine( "DotaMatchClient", "Rejected from server: {0}", packet.Reason );
         }
-
         void HandleServerAccept( ServerAcceptPacket packet )
         {
             DebugLog.WriteLine( "DotaMatchClient", "We have been accepted to the server!" );
+            
+            // todo: send off the client's initial convars
+        }
+
+        void HandleNetPacket( NetMessagePacket packet )
+        {
         }
 
     }
