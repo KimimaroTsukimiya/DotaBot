@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Reflection;
@@ -23,7 +24,9 @@ namespace DotaBot
 
     class DotaGCClient : GCClient
     {
-        public static DotaGCClient TheDotaGCClient;
+        static DotaGCClient _instance = new DotaGCClient();
+        public static DotaGCClient Instance { get { return _instance; } }
+
 
         static uint[] DOTA2Licenses = new uint[] {
             4840,   // Dota 2 Beta
@@ -36,30 +39,22 @@ namespace DotaBot
 
         uint clientVersion;
 
+
+        public SteamID SteamID { get { return SteamClient.SteamID; } }
+
+
         public event Action<object, FoundMatchEventArgs> FoundMatch;
 
 
-        public DotaGCClient( string user, string pass )
-            : base( user, pass )
+        DotaGCClient()
         {
-            Debug.Assert(TheDotaGCClient == null, "TheDotaGCClient has been set again!");
-            TheDotaGCClient = this;
         }
-
-        public SteamUser GetSteamUser()
-        {
-            return SteamUser;
-        }
-
-        public SteamFriends GetSteamFriends()
-        {
-            return SteamFriends;
-        }
-
 
         protected override void OnLoggedOn( SteamUser.LoggedOnCallback callback )
         {
             base.OnLoggedOn( callback );
+
+            TicketManager.Instance.UpdateIP( callback.PublicIP );
 
             SteamApps.GetAppOwnershipTicket( APPID );
             SteamGames.PlayGame( APPID );
@@ -68,7 +63,7 @@ namespace DotaBot
         protected override void OnLicenseList( SteamApps.LicenseListCallback callback )
         {
             base.OnLicenseList( callback );
-            if ( true /*!callback.LicenseList.Any( x => DOTA2Licenses.Contains(x.PackageID) ) */)
+            /*if ( !callback.LicenseList.Any( x => DOTA2Licenses.Contains(x.PackageID) ) )
             {
                 var IGCVersion_570 = WebAPI.GetInterface("IGCVersion_570");
                 var versionKV = IGCVersion_570.Call( "GetClientVersion" );
@@ -79,7 +74,7 @@ namespace DotaBot
                 helloMsg.Body.version = (uint)versionKV["active_version"].AsInteger();
 
                 SteamGameCoordinator.Send(helloMsg, APPID);
-            }
+            }*/
         }
 
         protected override void OnAppTicket(SteamApps.AppOwnershipTicketCallback callback, JobID jobId)

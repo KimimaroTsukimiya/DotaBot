@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SteamKit2;
 
 namespace DotaBot
 {
@@ -31,6 +33,14 @@ namespace DotaBot
                         break; // todo: in-band
                 }
 
+                if ( packet == null )
+                {
+                    DebugLog.WriteLine( "PacketFactory", "Recieved unknown packet!" );
+                    Debugger.Break();
+
+                    return null;
+                }
+
                 ms.Seek( 0, SeekOrigin.Begin );
                 packet.Deserialize( ms );
             }
@@ -54,8 +64,8 @@ namespace DotaBot
                     case OutOfBandPacketType.ServerReject:
                         return new ServerRejectPacket();
 
-                    //case OutOfBandPacketType.ServerAccept:
-                    //    return new ServerAcceptPacket();
+                    case OutOfBandPacketType.ServerAccept:
+                        return new ServerAcceptPacket();
                 }
             }
 

@@ -58,20 +58,20 @@ namespace DotaBot
             foreach ( var player in Players )
             {
                 bw.WriteByte( ( byte )CLC_Messages.clc_SplitPlayerConnect );
-                using (var ms = new MemoryStream())
+                using ( var ms = new MemoryStream() )
                 {
-                    Serializer.SerializeWithLengthPrefix(ms, player, PrefixStyle.Base128);
-                    bw.WriteBytes(ms.ToArray());
+                    Serializer.SerializeWithLengthPrefix( ms, player, PrefixStyle.Base128 );
+                    bw.WriteBytes( ms.ToArray() );
                 }
             }
 
             // bLowViolence
-            bw.WriteBits(0, 1);
+            bw.WriteBits( 0, 1 );
 
-            bw.WriteUInt16((ushort)Ticket.Length);
-            bw.WriteBytes(Ticket);
+            bw.WriteUInt16( ( ushort )Ticket.Length );
+            bw.WriteBytes( Ticket );
 
-            stream.Write(bw.Data, 0, bw.Data.Length - 1);
+            stream.Write( bw.Data, 0, bw.Data.Length - 1 );
         }
 /*
         public override void Deserialize( Stream stream )

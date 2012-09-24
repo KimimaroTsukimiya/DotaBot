@@ -13,36 +13,32 @@ namespace DotaBot
     class DotaClient
     {
         DotaMatchClient matchClient;
-        DotaGCClient gcClient;
 
 
-        public DotaClient( string user, string pass )
+        public DotaClient()
         {
-            var ticketManager = new TicketManager();
+            matchClient = new DotaMatchClient();
 
-            matchClient = new DotaMatchClient( ticketManager );
-
-            gcClient = new DotaGCClient( user, pass );
-            gcClient.FoundMatch += gcClient_FoundMatch;
+            DotaGCClient.Instance.FoundMatch += gcClient_FoundMatch;
         }
 
 
-        public void ConnectToGC()
+        public void ConnectToGC( string user, string pass )
         {
-            gcClient.Connect();
+            DotaGCClient.Instance.Connect( user, pass );
         }
 
         public void RunFrame()
         {
             matchClient.RunNetworking();
-            gcClient.RunCallbacks();
+            DotaGCClient.Instance.RunCallbacks();
         }
 
 
         void gcClient_FoundMatch( object sender, FoundMatchEventArgs e )
         {
             // todo: this code assumes we got the appticket in a timely fashion from steam
-            matchClient.Connect( e.Server, e.Password, gcClient.AppTicket );
+            matchClient.Connect( e.Server, e.Password );
         }
 
     }

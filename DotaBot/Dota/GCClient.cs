@@ -10,20 +10,20 @@ using SteamKit2.Internal;
 
 namespace DotaBot
 {
-    class GCClient
+    abstract class GCClient
     {
-        protected SteamClient SteamClient { get; private set; }
+        public SteamClient SteamClient { get; private set; }
 
         protected CallbackManager CallbackManager { get; private set; }
 
-        protected SteamUser SteamUser { get; private set; }
-        protected SteamGameCoordinator SteamGameCoordinator { get; private set; }
-        protected SteamApps SteamApps { get; private set; }
-        protected SteamGames SteamGames { get; private set; }
-        protected SteamFriends SteamFriends { get; private set; }
+        public SteamUser SteamUser { get; private set; }
+        public SteamGameCoordinator SteamGameCoordinator { get; private set; }
+        public SteamApps SteamApps { get; private set; }
+        public SteamGames SteamGames { get; private set; }
+        public SteamFriends SteamFriends { get; private set; }
 
-        protected string Username { get; private set; }
-        protected string Password { get; private set; }
+        public string Username { get; private set; }
+        public string Password { get; private set; }
 
 
         public byte[] AppTicket { get; private set; }
@@ -32,11 +32,8 @@ namespace DotaBot
         DateTime nextConnect;
 
 
-        public GCClient( string user, string pass )
+        public GCClient()
         {
-            Username = user;
-            Password = pass;
-
             SteamClient = new SteamClient();
             SteamClient.AddHandler( new SteamGames() );
 
@@ -62,8 +59,12 @@ namespace DotaBot
         }
 
 
-        public void Connect()
+
+        public void Connect( string user, string pass )
         {
+            Username = user;
+            Password = pass;
+
             nextConnect = DateTime.Now;
         }
 

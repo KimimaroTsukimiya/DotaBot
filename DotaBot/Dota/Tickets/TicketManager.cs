@@ -12,15 +12,19 @@ namespace DotaBot
 {
     class TicketManager
     {
+        static TicketManager _instance = new TicketManager();
+        public static TicketManager Instance { get { return _instance; } }
+
+
         Queue<byte[]> currentTokens;
 
         int connectCount = 0;
         int timeStart;
 
-        IPAddress ipAddr = IPAddress.Parse("174.100.187.193");
+        IPAddress ipAddr;
 
 
-        public TicketManager()
+        TicketManager()
         {
             currentTokens = new Queue<byte[]>();
             timeStart = Environment.TickCount;
@@ -30,6 +34,10 @@ namespace DotaBot
         public void UpdateTokens( List<byte[]> tokens )
         {
             tokens.ForEach( t => currentTokens.Enqueue( t ) );
+        }
+        public void UpdateIP( IPAddress ipAddr )
+        {
+            this.ipAddr = ipAddr;
         }
 
 
@@ -44,9 +52,13 @@ namespace DotaBot
             using ( var ms = new MemoryStream() )
             using ( var bw = new BinaryWriter( ms ) )
             {
+                var gcClient = DotaGCClient.Instance;
+
+                bw.Write( gcClient.SteamID.ConvertToUInt64() );
+
                 byte[] token = currentTokens.Dequeue();
 
-                // write gctoken tsection
+                // gctoken tsection
                 bw.Write( token.Length );
                 bw.Write( token );
 
@@ -55,6 +67,12 @@ namespace DotaBot
                 // header tsection
                 bw.Write( sessionHeader.Length );
                 bw.Write( sessionHeader );
+
+                byte[] appTicket = gcClient.AppTicket;
+
+                // appticket tsection
+                bw.Write( appTicket.Length );
+                bw.Write( appTicket );
 
                 ticketData = ms.ToArray();
             }

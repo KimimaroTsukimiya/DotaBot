@@ -25,19 +25,21 @@ namespace DotaBot
 
         public override void HandleMsg( IPacketMsg packetMsg )
         {
-            switch (packetMsg.MsgType)
+            switch ( packetMsg.MsgType )
             {
                 case EMsg.ClientGameConnectTokens:
-                    HandleGameConnectTokens(packetMsg);
+                    HandleGameConnectTokens( packetMsg );
                     break;
             }
         }
 
-        private void HandleGameConnectTokens(IPacketMsg packetMsg)
+        void HandleGameConnectTokens( IPacketMsg packetMsg )
         {
-            DebugLog.WriteLine("GCClient", "Got GameConnectTokens from Steam");
-            var gameConnectTokens = new ClientMsgProtobuf<CMsgClientGameConnectTokens>(packetMsg);
-            DotaMatchClient.TheDotaMatchClient.ticketManager.UpdateTokens(gameConnectTokens.Body.tokens);
+            DebugLog.WriteLine( "GCClient", "Got GameConnectTokens from Steam" );
+
+            var gameConnectTokens = new ClientMsgProtobuf<CMsgClientGameConnectTokens>( packetMsg );
+
+            TicketManager.Instance.UpdateTokens( gameConnectTokens.Body.tokens );
         }
     }
 }

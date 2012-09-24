@@ -73,6 +73,7 @@
     <Compile Include="Networking\NetClient.cs" />
     <Compile Include="Networking\OOB\ClientAuthPacket.cs" />
     <Compile Include="Networking\OOB\ClientConnectPacket.cs" />
+    <Compile Include="Networking\OOB\ServerAcceptPacket.cs" />
     <Compile Include="Networking\OOB\ServerChallengePacket.cs" />
     <Compile Include="Networking\OOB\ServerRejectPacket.cs" />
     <Compile Include="Networking\OutOfBandPacket.cs" />
